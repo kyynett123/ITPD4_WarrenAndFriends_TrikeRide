@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrikeRide - Route & Fare Guide</title>
+  
+  <!-- Leaflet Map Stylesheet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <style>
+    :root {
+      --bg-tan: #DDB892;
+      --bg-light: #EDE0D4;
+      --border-dark: #2B2D42;
+      --text-main: #1A1A1A;
+      --text-muted: #5C5C5C;
+      --green-online: #10B981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background: #e5e7eb;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      color: var(--text-main);
+    }
+
+    /* Mobile Viewport Simulation Frame */
+    .mobile-frame {
+      width: 100%;
+      max-width: 420px;
+      min-height: 100vh;
+      background: #FFFFFF;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
+    /* Header Bar */
+    .top-bar {
+      padding: 14px 16px;
+      background: #FFFFFF;
+      border-bottom: 1.5px solid var(--border-dark);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    /* Views / Screens */
+    .screen-view {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      overflow-y: auto;
+      padding-bottom: 70px; /* Space for bottom nav */
+    }
+
+    .screen-view.active {
+      display: flex;
+    }
+
+    /* Map Element */
+    #map {
+      width: 100%;
+      height: 280px;
+      border-bottom: 1.5px solid var(--border-dark);
+    }
+
+    /* Common Card & Input Styles matching Figma */
+    .content-box {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .tan-card {
+      background: var(--bg-tan);
+      border: 1.5px solid var(--border-dark);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    .tan-input {
+      width: 100%;
+      background: var(--bg-tan);
+      border: 1.5px solid var(--border-dark);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text-main);
+      outline: none;
+    }
+
+    .tan-btn {
+      width: 100%;
+      background: var(--bg-tan);
+      border: 1.5px solid var(--border-dark);
+      border-radius: 20px;
+      padding: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: opacity 0.2s;
+    }
+
+    .tan-btn:active {
+      opacity: 0.8;
+    }
+
+    /* Fare Brackets (From Figma Fare Guide Screen) */
+    .fare-bracket {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-tan);
+      border: 1.5px solid var(--border-dark);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-weight: 600;
+    }
+
+    /* Driver Status Badge */
+    .status-badge {
+      display: inline-block;
+      background: var(--green-online);
+      color: white;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    /* Bottom Navigation Bar */
+    .bottom-nav {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background: #FFFFFF;
+      border-top: 1.5px solid var(--border-dark);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      color: var(--text-muted);
+    }
+
+    .nav-btn.active {
+      color: var(--text-main);
+      font-weight: 800;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="mobile-frame">
+    <!-- Header -->
+    <header class="top-bar">
+      <div class="brand-title">TrikeRide</div>
+      <div id="statusIndicator" class="status-badge">System Live</div>
+    </header>
+
+    <!-- SCREEN 1: HOME / MAP -->
+    <div id="screenHome" class="screen-view active">
+      <div id="map"></div>
+      <div class="content-box">
+        <div class="tan-card">
+          <div style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Quick Destination Search</div>
+          <input type="text" class="tan-input" style="margin-top: 6px;" placeholder="Search destination (e.g. WIT, CPU)..." />
+        </div>
+        <div style="font-weight: 700; font-size: 0.9rem;">Verified Neighborhood Terminals</div>
+        <div id="terminalList" style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-size: 0.85rem; color: var(--text-muted);">Loading terminal data from Supabase...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 2: ROUTE FINDER -->
+    <div id="screenRoute" class="screen-view">
+      <div class="content-box">
+        <h3 style="font-size: 1.1rem;">Route Finder</h3>
+        <div>
+          <label style="font-size: 0.75rem; font-weight: 600;">FROM (YOUR LOCATION)</label>
+          <select id="originSelect" class="tan-input" style="margin-top: 4px;">
+            <option value="WIT">WIT (Western Institute of Technology)</option>
+            <option value="CPU">CPU (Central Philippine University)</option>
+            <option value="Jaro">Jaro Plaza</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size: 0.75rem; font-weight: 600;">TO (DESTINATION)</label>
+          <select id="destSelect" class="tan-input" style="margin-top: 4px;">
+            <option value="CPU">CPU (Central Philippine University)</option>
+            <option value="Pavia">Pavia Public Plaza</option>
+            <option value="WIT">WIT (Western Institute of Technology)</option>
+          </select>
+        </div>
+
+        <button class="tan-btn" onclick="calculateSelectedRoute()">Find Route & Compute Fare</button>
+
+        <div id="routeCalculationResult" class="tan-card" style="display: none; margin-top: 10px;">
+          <h4 id="resRouteTitle" style="font-size: 0.95rem;">PAVIA → CPU</h4>
+          <p id="resTravelTime" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">⏱ 10-15 mins estimated travel time</p>
+          <hr style="border: 0.5px solid var(--border-dark); margin: 8px 0;" />
+          <div style="display: flex; justify-content: space-between; font-weight: 700;">
+            <span>Regular (Shared):</span>
+            <span id="resRegFare">₱15.00</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-weight: 700; margin-top: 4px;">
+            <span>Special (Direct):</span>
+            <span id="resSpecFare">₱45.00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 3: FARE GUIDE -->
+    <div id="screenFare" class="screen-view">
+      <div class="content-box">
+        <h3 style="font-size: 1.1rem; text-align: center;">FARE RATE</h3>
+        <p style="font-size: 0.8rem; text-align: center; color: var(--text-muted);">Standard Official Fare Rate Matrix</p>
+        
+        <div id="fareBracketsContainer" style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+          <!-- Dynamically filled from Supabase -->
+        </div>
+
+        <p style="font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: 10px;">
+          ⓘ Fares approved by local TODA guidelines. Rates apply per single passenger for regular trips.
+        </p>
+      </div>
+    </div>
+
+    <!-- SCREEN 4: DRIVER DASHBOARD -->
+    <div id="screenDriver" class="screen-view">
+      <div class="content-box">
+        <h3 style="font-size: 1.1rem;">Driver Dashboard</h3>
+        <div class="tan-card">
+          <div style="font-weight: 700;">Sergio</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">Driver ID: DR-102</div>
+          <div style="margin-top: 8px;">
+            <span id="driverStatusTag" class="status-badge">Online</span>
+          </div>
+        </div>
+
+        <div class="tan-card" style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.85rem; font-weight: 600;">Waiting for passengers</span>
+          <button class="tan-btn" id="toggleOnlineBtn" style="width: auto; padding: 6px 14px;" onclick="toggleDriverOnline()">Go Offline</button>
+        </div>
+
+        <button class="tan-btn" onclick="alert('Viewing Trip History')">View Ride History</button>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" onclick="switchTab('screenHome', this)">🗺️ Home</button>
+      <button class="nav-btn" onclick="switchTab('screenRoute', this)">📍 Routes</button>
+      <button class="nav-btn" onclick="switchTab('screenFare', this)">🏷️ Fares</button>
+      <button class="nav-btn" onclick="switchTab('screenDriver', this)">👤 Driver</button>
+    </nav>
+  </div>
+
+  <!-- Leaflet Map Script -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Load Main Logic -->
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
+```
+
+---
+
+### Step 2: Wire Up `src/main.js` with Supabase
+
+Open `src/main.js` and replace its contents with the code below. It connects directly to your newly configured `src/supabase.js`, fetches your seeded terminals and fare rates, and initializes the Leaflet map:
+
+```javascript
+import { supabase } from './supabase.js';
+
+// Global Tab Switcher
+window.switchTab = function (screenId, btnElement) {
+  document.querySelectorAll('.screen-view').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+  document.getElementById(screenId).classList.add('active');
+  btnElement.classList.add('active');
+
+  // If opening home screen, recalculate map dimensions
+  if (screenId === 'screenHome' && window.mapInstance) {
+    setTimeout(() => window.mapInstance.invalidateSize(), 200);
+  }
+};
+
+// 1. Initialize Map
+let map;
+function initMap() {
+  map = L.map('map').setView([10.7202, 122.5621], 13);
+  window.mapInstance = map;
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+}
+
+// 2. Fetch & Render Terminals from Supabase
+async function loadTerminals() {
+  const listEl = document.getElementById('terminalList');
+  
+  try {
+    const { data: terminals, error } = await supabase.from('tbl_terminals').select('*');
+    if (error) throw error;
+
+    listEl.innerHTML = '';
+    terminals.forEach(term => {
+      // Add Pin to Leaflet Map
+      L.marker([term.latitude, term.longitude])
+        .addTo(map)
+        .bindPopup(`<b>${term.terminal_name}</b><br>${term.landmark}<br><i>${term.toda_association}</i>`);
+
+      // Add to List Card
+      const item = document.createElement('div');
+      item.className = 'tan-card';
+      item.innerHTML = `
+        <div style="font-weight: 700; font-size: 0.9rem;">📍 ${term.terminal_name}</div>
+        <div style="font-size: 0.75rem; color: #5C5C5C;">${term.landmark}</div>
+        <div style="font-size: 0.7rem; font-weight: 600; margin-top: 4px; color: #2B2D42;">${term.toda_association}</div>
+      `;
+      listEl.appendChild(item);
+    });
+  } catch (err) {
+    console.error('Error fetching terminals:', err);
+    listEl.innerHTML = `<div style="font-size: 0.8rem; color: red;">Failed to load from database. Check console.</div>`;
+  }
+}
+
+// 3. Fetch & Render Fare Matrix from Supabase
+async function loadFares() {
+  const fareContainer = document.getElementById('fareBracketsContainer');
+
+  try {
+    const { data: fares, error } = await supabase.from('tbl_fare_matrix').select('*').order('min_km', { ascending: true });
+    if (error) throw error;
+
+    fareContainer.innerHTML = '';
+    fares.forEach(f => {
+      const box = document.createElement('div');
+      box.className = 'fare-bracket';
+      box.innerHTML = `
+        <span>${f.distance_range}</span>
+        <span>₱${parseFloat(f.regular_fare).toFixed(0)}</span>
+      `;
+      fareContainer.appendChild(box);
+    });
+  } catch (err) {
+    console.error('Error fetching fares:', err);
+    fareContainer.innerHTML = `<div style="font-size: 0.8rem; color: red;">Failed to load fare matrix.</div>`;
+  }
+}
+
+// 4. Calculate Route Simulation
+window.calculateSelectedRoute = function () {
+  const origin = document.getElementById('originSelect').value;
+  const dest = document.getElementById('destSelect').value;
+  const resultCard = document.getElementById('routeCalculationResult');
+
+  document.getElementById('resRouteTitle').innerText = `${origin} → ${dest}`;
+  
+  if (origin === dest) {
+    document.getElementById('resRegFare').innerText = '₱10.00';
+    document.getElementById('resSpecFare').innerText = '₱30.00';
+    document.getElementById('resTravelTime').innerText = '⏱ Within same barangay zone (< 1 km)';
+  } else {
+    document.getElementById('resRegFare').innerText = '₱15.00';
+    document.getElementById('resSpecFare').innerText = '₱45.00';
+    document.getElementById('resTravelTime').innerText = '⏱ 10-15 mins estimated travel time';
+  }
+
+  resultCard.style.display = 'block';
+};
+
+// 5. Driver Availability Toggle
+let isOnline = true;
+window.toggleDriverOnline = function () {
+  isOnline = !isOnline;
+  const tag = document.getElementById('driverStatusTag');
+  const btn = document.getElementById('toggleOnlineBtn');
+
+  if (isOnline) {
+    tag.innerText = 'Online';
+    tag.style.background = '#10B981';
+    btn.innerText = 'Go Offline';
+  } else {
+    tag.innerText = 'Offline';
+    tag.style.background = '#6B7280';
+    btn.innerText = 'Go Online';
+  }
+};
+
+// Start application
+window.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  loadTerminals();
+  loadFares();
+});
+```
+
+---
+
+### Step 3: Test It
+
+In your terminal, make sure the development server is running:
+```bash
+npm run dev

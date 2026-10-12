@@ -1,18 +1,20 @@
 {
   "name": "trikeride",
-  "version": "1.0.0",
-  "main": "index.js",
-  "dependencies": {
-    "expo": "~57.0.27",
-    "expo-status-bar": "~57.0.1",
-    "react": "19.2.3",
-    "react-native": "0.86.3"
-  },
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
-  "private": true
+  "devDependencies": {
+    "vite": "^8.3.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.3",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^1.55.0",
+    "react-leaflet": "^5.0.0"
+  }
 }
