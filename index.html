@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TrikeRide - Route & Fare Guide</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>TrikeRide - Neighborhood Route & Fare Guide</title>
   
   <!-- Leaflet Map Stylesheet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -12,100 +12,339 @@
     :root {
       --bg-tan: #DDB892;
       --bg-light: #EDE0D4;
+      --bg-cream: #FAF6F0;
+      --bg-card: #FFFFFF;
       --border-dark: #2B2D42;
       --text-main: #1A1A1A;
       --text-muted: #5C5C5C;
       --green-online: #10B981;
+      --gray-offline: #6B7280;
+      --shadow-sm: 0 2px 4px rgba(43, 45, 66, 0.06);
+      --shadow-md: 0 4px 12px rgba(43, 45, 66, 0.1);
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
     }
 
     body {
-      background: #e5e7eb;
+      background: #E5E7EB;
+      color: var(--text-main);
+      min-height: 100vh;
       display: flex;
       justify-content: center;
-      min-height: 100vh;
-      color: var(--text-main);
+      align-items: center;
+      overflow-x: hidden;
     }
 
-    /* Mobile Viewport Simulation Frame */
-    .mobile-frame {
-      width: 100%;
-      max-width: 420px;
-      min-height: 100vh;
-      background: #FFFFFF;
+    /* =========================================================
+       RESPONSIVE APP CONTAINER (Desktop Split / Mobile Stacked)
+       ========================================================= */
+    .app-layout {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      background: var(--bg-cream);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* LEFT SIDEBAR (Desktop) / CONTENT PANEL (Mobile) */
+    .sidebar-panel {
       display: flex;
       flex-direction: column;
+      background: var(--bg-card);
+      border-right: 1.5px solid var(--border-dark);
+      z-index: 20;
       position: relative;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
+    /* MAP CONTAINER */
+    .map-container {
+      flex: 1;
+      height: 100%;
+      position: relative;
+      background: #E5E7EB;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* =========================================================
+       DESKTOP & LAPTOP SCREEN MEDIA QUERY (>= 768px)
+       ========================================================= */
+    @media (min-width: 768px) {
+      .sidebar-panel {
+        width: 420px;
+        min-width: 380px;
+        max-width: 440px;
+        height: 100vh;
+        box-shadow: 4px 0 24px rgba(43, 45, 66, 0.08);
+      }
+
+      .mobile-bottom-nav {
+        display: none !important;
+      }
+
+      .desktop-nav {
+        display: flex !important;
+      }
+
+      .panel-content {
+        flex: 1;
+        overflow-y: auto;
+        padding-bottom: 24px;
+      }
+    }
+
+    /* =========================================================
+       MOBILE PHONE SCREEN MEDIA QUERY (< 768px)
+       ========================================================= */
+    @media (max-width: 767px) {
+      body {
+        align-items: stretch;
+      }
+
+      .app-layout {
+        flex-direction: column;
+      }
+
+      /* On mobile, map is placed at top like Google Maps */
+      .map-container {
+        height: 38vh;
+        min-height: 240px;
+        max-height: 320px;
+        flex: none;
+        order: 1;
+        border-bottom: 1.5px solid var(--border-dark);
+      }
+
+      .sidebar-panel {
+        flex: 1;
+        height: 62vh;
+        order: 2;
+        border-right: none;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .desktop-nav {
+        display: none !important;
+      }
+
+      .mobile-bottom-nav {
+        display: flex !important;
+      }
+
+      .panel-content {
+        flex: 1;
+        overflow-y: auto;
+        padding-bottom: 75px; /* Space for bottom nav */
+      }
     }
 
     /* Header Bar */
-    .top-bar {
-      padding: 14px 16px;
-      background: #FFFFFF;
+    .app-header {
+      padding: 12px 16px;
+      background: var(--bg-card);
       border-bottom: 1.5px solid var(--border-dark);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-shrink: 0;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-icon {
+      font-size: 1.4rem;
+      background: var(--bg-light);
+      border: 1.5px solid var(--border-dark);
+      border-radius: 8px;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .brand-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-      letter-spacing: -0.5px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+      color: var(--text-main);
     }
 
-    /* Views / Screens */
+    .brand-sub {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Status Badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--green-online);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      transition: background 0.2s ease;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background: #FFFFFF;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* Desktop Navigation Tabs Bar */
+    .desktop-nav {
+      display: none;
+      padding: 8px 14px;
+      background: var(--bg-cream);
+      border-bottom: 1.5px solid var(--border-dark);
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .tab-pill {
+      flex: 1;
+      padding: 7px 4px;
+      background: transparent;
+      border: 1.5px solid transparent;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .tab-pill:hover {
+      background: rgba(221, 184, 146, 0.3);
+      color: var(--text-main);
+    }
+
+    .tab-pill.active {
+      background: var(--bg-tan);
+      border-color: var(--border-dark);
+      color: var(--text-main);
+    }
+
+    /* Mobile Bottom Navigation Bar */
+    .mobile-bottom-nav {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background: var(--bg-card);
+      border-top: 1.5px solid var(--border-dark);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 30;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 8px;
+      transition: all 0.15s ease;
+    }
+
+    .nav-btn.active {
+      color: var(--text-main);
+      font-weight: 800;
+      background: var(--bg-light);
+    }
+
+    /* Screen Views */
     .screen-view {
       display: none;
-      flex: 1;
       flex-direction: column;
-      overflow-y: auto;
-      padding-bottom: 70px; /* Space for bottom nav */
+      gap: 14px;
+      padding: 16px;
+      animation: fadeIn 0.18s ease-in-out;
     }
 
     .screen-view.active {
       display: flex;
     }
 
-    /* Map Element */
-    #map {
-      width: 100%;
-      height: 280px;
-      border-bottom: 1.5px solid var(--border-dark);
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Common Card & Input Styles matching Figma */
-    .content-box {
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
+    /* Common Card Styles */
     .tan-card {
       background: var(--bg-tan);
       border: 1.5px solid var(--border-dark);
       border-radius: 12px;
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .light-card {
+      background: var(--bg-light);
+      border: 1.5px solid var(--border-dark);
+      border-radius: 10px;
       padding: 12px 14px;
     }
 
     .tan-input {
       width: 100%;
-      background: var(--bg-tan);
+      background: var(--bg-card);
       border: 1.5px solid var(--border-dark);
       border-radius: 8px;
       padding: 10px 12px;
-      font-size: 0.95rem;
-      font-weight: 500;
+      font-size: 0.92rem;
+      font-weight: 600;
       color: var(--text-main);
       outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .tan-input:focus {
+      border-color: #000000;
+      box-shadow: 0 0 0 2px rgba(221, 184, 146, 0.4);
     }
 
     .tan-btn {
@@ -113,333 +352,569 @@
       background: var(--bg-tan);
       border: 1.5px solid var(--border-dark);
       border-radius: 20px;
-      padding: 10px;
-      font-size: 0.95rem;
+      padding: 11px;
+      font-size: 0.92rem;
       font-weight: 700;
       cursor: pointer;
       text-align: center;
-      transition: opacity 0.2s;
+      color: var(--text-main);
+      box-shadow: var(--shadow-sm);
+      transition: background 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
 
     .tan-btn:active {
-      opacity: 0.8;
+      transform: scale(0.98);
+      background: #cf9f73;
     }
 
-    /* Fare Brackets (From Figma Fare Guide Screen) */
+    /* Route Swap & Connector */
+    .route-connector-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 2px 0;
+    }
+
+    .swap-btn {
+      background: var(--bg-light);
+      border: 1.5px solid var(--border-dark);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.15s, background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .swap-btn:hover {
+      background: var(--bg-tan);
+      transform: rotate(180deg);
+    }
+
+    /* Filter Chips */
+    .chip-container {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .chip-btn {
+      background: var(--bg-light);
+      border: 1px solid var(--border-dark);
+      border-radius: 14px;
+      padding: 4px 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+
+    .chip-btn.active, .chip-btn:hover {
+      background: var(--bg-tan);
+      border-color: var(--border-dark);
+    }
+
+    /* Fare Brackets (Screen 3) */
     .fare-bracket {
       display: flex;
       justify-content: space-between;
       align-items: center;
       background: var(--bg-tan);
       border: 1.5px solid var(--border-dark);
-      border-radius: 8px;
-      padding: 12px 16px;
+      border-radius: 10px;
+      padding: 12px 14px;
       font-weight: 600;
     }
 
-    /* Driver Status Badge */
-    .status-badge {
-      display: inline-block;
-      background: var(--green-online);
-      color: white;
-      padding: 2px 10px;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 700;
-    }
-
-    /* Bottom Navigation Bar */
-    .bottom-nav {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 60px;
-      background: #FFFFFF;
-      border-top: 1.5px solid var(--border-dark);
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-    }
-
-    .nav-btn {
-      background: none;
-      border: none;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      color: var(--text-muted);
-    }
-
-    .nav-btn.active {
+    /* Leaflet Popup Styling */
+    .leaflet-popup-content-wrapper {
+      background: var(--bg-light);
+      border: 1.5px solid var(--border-dark);
+      border-radius: 10px;
+      box-shadow: var(--shadow-md);
       color: var(--text-main);
-      font-weight: 800;
+      padding: 2px;
+    }
+    .leaflet-popup-tip {
+      background: var(--bg-light);
+    }
+
+    /* Custom Scrollbar for clean app appearance */
+    .panel-content::-webkit-scrollbar {
+      width: 5px;
+    }
+    .panel-content::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .panel-content::-webkit-scrollbar-thumb {
+      background: #D1D5DB;
+      border-radius: 4px;
     }
   </style>
 </head>
 <body>
 
-  <div class="mobile-frame">
-    <!-- Header -->
-    <header class="top-bar">
-      <div class="brand-title">TrikeRide</div>
-      <div id="statusIndicator" class="status-badge">System Live</div>
-    </header>
-
-    <!-- SCREEN 1: HOME / MAP -->
-    <div id="screenHome" class="screen-view active">
-      <div id="map"></div>
-      <div class="content-box">
-        <div class="tan-card">
-          <div style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">Quick Destination Search</div>
-          <input type="text" class="tan-input" style="margin-top: 6px;" placeholder="Search destination (e.g. WIT, CPU)..." />
-        </div>
-        <div style="font-weight: 700; font-size: 0.9rem;">Verified Neighborhood Terminals</div>
-        <div id="terminalList" style="display: flex; flex-direction: column; gap: 8px;">
-          <div style="font-size: 0.85rem; color: var(--text-muted);">Loading terminal data from Supabase...</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- SCREEN 2: ROUTE FINDER -->
-    <div id="screenRoute" class="screen-view">
-      <div class="content-box">
-        <h3 style="font-size: 1.1rem;">Route Finder</h3>
-        <div>
-          <label style="font-size: 0.75rem; font-weight: 600;">FROM (YOUR LOCATION)</label>
-          <select id="originSelect" class="tan-input" style="margin-top: 4px;">
-            <option value="WIT">WIT (Western Institute of Technology)</option>
-            <option value="CPU">CPU (Central Philippine University)</option>
-            <option value="Jaro">Jaro Plaza</option>
-          </select>
-        </div>
-
-        <div>
-          <label style="font-size: 0.75rem; font-weight: 600;">TO (DESTINATION)</label>
-          <select id="destSelect" class="tan-input" style="margin-top: 4px;">
-            <option value="CPU">CPU (Central Philippine University)</option>
-            <option value="Pavia">Pavia Public Plaza</option>
-            <option value="WIT">WIT (Western Institute of Technology)</option>
-          </select>
-        </div>
-
-        <button class="tan-btn" onclick="calculateSelectedRoute()">Find Route & Compute Fare</button>
-
-        <div id="routeCalculationResult" class="tan-card" style="display: none; margin-top: 10px;">
-          <h4 id="resRouteTitle" style="font-size: 0.95rem;">PAVIA → CPU</h4>
-          <p id="resTravelTime" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">⏱ 10-15 mins estimated travel time</p>
-          <hr style="border: 0.5px solid var(--border-dark); margin: 8px 0;" />
-          <div style="display: flex; justify-content: space-between; font-weight: 700;">
-            <span>Regular (Shared):</span>
-            <span id="resRegFare">₱15.00</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; font-weight: 700; margin-top: 4px;">
-            <span>Special (Direct):</span>
-            <span id="resSpecFare">₱45.00</span>
+  <div class="app-layout">
+    
+    <!-- =======================================================
+         SIDEBAR / CONTENT PANEL (Desktop: Left, Mobile: Bottom)
+         ======================================================= -->
+    <aside class="sidebar-panel">
+      <!-- App Header -->
+      <header class="app-header">
+        <div class="brand-group">
+          <div class="brand-icon">🛺</div>
+          <div>
+            <div class="brand-title">TrikeRide</div>
+            <div class="brand-sub">Route & Fare Guide</div>
           </div>
         </div>
-      </div>
-    </div>
+      </header>
 
-    <!-- SCREEN 3: FARE GUIDE -->
-    <div id="screenFare" class="screen-view">
-      <div class="content-box">
-        <h3 style="font-size: 1.1rem; text-align: center;">FARE RATE</h3>
-        <p style="font-size: 0.8rem; text-align: center; color: var(--text-muted);">Standard Official Fare Rate Matrix</p>
+      <!-- Desktop Tab Bar (Shown on Laptop/Desktop) -->
+      <nav class="desktop-nav">
+        <button class="tab-pill active" onclick="switchTab('screenHome', this)">🗺️ Terminals</button>
+        <button class="tab-pill" onclick="switchTab('screenRoute', this)">📍 Routes</button>
+        <button class="tab-pill" onclick="switchTab('screenFare', this)">🏷️ Fares</button>
+        <button class="tab-pill" onclick="switchTab('screenDriver', this)">🛺 TODA Hubs</button>
+      </nav>
+
+      <!-- Panel Screen Content -->
+      <main class="panel-content">
         
-        <div id="fareBracketsContainer" style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
-          <!-- Dynamically filled from Supabase -->
-        </div>
-
-        <p style="font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: 10px;">
-          ⓘ Fares approved by local TODA guidelines. Rates apply per single passenger for regular trips.
-        </p>
-      </div>
-    </div>
-
-    <!-- SCREEN 4: DRIVER DASHBOARD -->
-    <div id="screenDriver" class="screen-view">
-      <div class="content-box">
-        <h3 style="font-size: 1.1rem;">Driver Dashboard</h3>
-        <div class="tan-card">
-          <div style="font-weight: 700;">Sergio</div>
-          <div style="font-size: 0.8rem; color: var(--text-muted);">Driver ID: DR-102</div>
-          <div style="margin-top: 8px;">
-            <span id="driverStatusTag" class="status-badge">Online</span>
+        <!-- SCREEN 1: HOME (Terminal Locator) -->
+        <section id="screenHome" class="screen-view active">
+          <!-- Quick Search -->
+          <div class="tan-card">
+            <div style="font-size: 0.78rem; font-weight: 800; text-transform: uppercase; color: var(--text-main); margin-bottom: 6px;">
+              🔍 Neighborhood Terminal Search
+            </div>
+            <input 
+              type="text" 
+              id="terminalSearchInput" 
+              class="tan-input" 
+              placeholder="Search terminal (e.g. WIT, CPU, Jaro, Pavia)..." 
+            />
+            
+            <!-- Quick Filter Chips -->
+            <div class="chip-container" style="margin-top: 8px;">
+              <button class="chip-btn active" onclick="filterTerminalsByChip('all', this)">All</button>
+              <button class="chip-btn" onclick="filterTerminalsByChip('WIT', this)">WIT</button>
+              <button class="chip-btn" onclick="filterTerminalsByChip('CPU', this)">CPU</button>
+              <button class="chip-btn" onclick="filterTerminalsByChip('Jaro', this)">Jaro Plaza</button>
+              <button class="chip-btn" onclick="filterTerminalsByChip('SM City', this)">SM City</button>
+              <button class="chip-btn" onclick="filterTerminalsByChip('Robinsons', this)">Robinsons</button>
+              <button class="chip-btn" onclick="filterTerminalsByChip('Pavia', this)">Pavia</button>
+              <button class="chip-btn" onclick="filterTerminalsByChip('Tagbak', this)">Tagbak</button>
+              <button class="chip-btn" onclick="filterTerminalsByChip('WVSU', this)">WVSU</button>
+            </div>
           </div>
-        </div>
 
-        <div class="tan-card" style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 0.85rem; font-weight: 600;">Waiting for passengers</span>
-          <button class="tan-btn" id="toggleOnlineBtn" style="width: auto; padding: 6px 14px;" onclick="toggleDriverOnline()">Go Offline</button>
-        </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+            <div style="font-weight: 800; font-size: 0.9rem;">Verified Neighborhood Hubs</div>
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">Tap card to locate</span>
+          </div>
 
-        <button class="tan-btn" onclick="alert('Viewing Trip History')">View Ride History</button>
+          <!-- Terminals List -->
+          <div id="terminalList" style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 12px;">
+              Loading terminal data from Supabase...
+            </div>
+          </div>
+        </section>
+
+        <!-- SCREEN 2: ROUTE FINDER -->
+        <section id="screenRoute" class="screen-view">
+          <div>
+            <h3 style="font-size: 1.1rem; font-weight: 800;">Point-to-Point Route Calculator</h3>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
+              Select origin and destination to compute regular shared and special direct fares.
+            </p>
+          </div>
+
+          <!-- Quick Demo Route Shortcuts -->
+          <div>
+            <div style="font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
+              ⚡ Popular Quick Demo Routes
+            </div>
+            <div class="chip-container">
+              <button class="chip-btn" onclick="setQuickRoute('WIT', 'SM City')">WIT ➔ SM City</button>
+              <button class="chip-btn" onclick="setQuickRoute('CPU', 'Jaro Plaza')">CPU ➔ Jaro</button>
+              <button class="chip-btn" onclick="setQuickRoute('WIT', 'CPU')">WIT ➔ CPU</button>
+              <button class="chip-btn" onclick="setQuickRoute('Jaro Plaza', 'Pavia')">Jaro ➔ Pavia</button>
+              <button class="chip-btn" onclick="setQuickRoute('CPU', 'SM City')">CPU ➔ SM City</button>
+              <button class="chip-btn" onclick="setQuickRoute('Robinsons Jaro', 'WVSU')">Robinsons ➔ WVSU</button>
+            </div>
+          </div>
+
+          <div class="tan-card" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- ORIGIN -->
+            <div>
+              <label style="font-size: 0.72rem; font-weight: 800; color: #2B2D42;">🟢 ORIGIN (PICKUP LOCATION)</label>
+              <select id="originSelect" class="tan-input" style="margin-top: 4px;">
+                <option value="WIT" selected>WIT (Western Institute of Technology)</option>
+                <option value="CPU">CPU (Central Philippine University)</option>
+                <option value="Jaro Plaza">Jaro Plaza (Metropolitan Belfry)</option>
+                <option value="SM City">SM City Iloilo (Mandurriao)</option>
+                <option value="Robinsons Jaro">Robinsons Place Jaro</option>
+                <option value="Pavia">Pavia Public Plaza</option>
+                <option value="Tagbak">Tagbak Transport Terminal</option>
+                <option value="WVSU">WVSU (West Visayas State University)</option>
+              </select>
+            </div>
+
+            <!-- SWAP CONNECTOR -->
+            <div class="route-connector-row" style="justify-content: center;">
+              <button class="swap-btn" title="Swap Origin and Destination" onclick="swapOriginAndDestination()">⇅</button>
+              <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted);">Swap Locations</span>
+            </div>
+
+            <!-- DESTINATION -->
+            <div>
+              <label style="font-size: 0.72rem; font-weight: 800; color: #2B2D42;">🔴 DESTINATION (DROPOFF)</label>
+              <select id="destSelect" class="tan-input" style="margin-top: 4px;">
+                <option value="WIT">WIT (Western Institute of Technology)</option>
+                <option value="CPU">CPU (Central Philippine University)</option>
+                <option value="Jaro Plaza">Jaro Plaza (Metropolitan Belfry)</option>
+                <option value="SM City" selected>SM City Iloilo (Mandurriao)</option>
+                <option value="Robinsons Jaro">Robinsons Place Jaro</option>
+                <option value="Pavia">Pavia Public Plaza</option>
+                <option value="Tagbak">Tagbak Transport Terminal</option>
+                <option value="WVSU">WVSU (West Visayas State University)</option>
+              </select>
+            </div>
+
+            <button class="tan-btn" id="btnCalculateRoute" style="margin-top: 4px;" onclick="calculateSelectedRoute()">
+              ⚡ Compute Route & Fare
+            </button>
+          </div>
+
+          <!-- Route Calculation Result Card -->
+          <div id="routeCalculationResult" class="tan-card" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <span style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted);">Calculated Route</span>
+                <h4 id="resRouteTitle" style="font-size: 1rem; font-weight: 800; color: var(--text-main); margin-top: 2px;">WIT ➔ SM City</h4>
+              </div>
+              <span id="resDistance" style="font-size: 0.8rem; font-weight: 800; background: #FFFFFF; border: 1.5px solid var(--border-dark); padding: 3px 8px; border-radius: 8px;">2.4 km</span>
+            </div>
+
+            <div id="resTravelTime" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; font-weight: 500;">
+              ⏱ 8-12 mins estimated travel time
+            </div>
+
+            <hr style="border: 0.5px solid var(--border-dark); margin: 12px 0;" />
+
+            <!-- Fare Comparison Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="light-card" style="text-align: center;">
+                <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Regular (Shared)</div>
+                <div id="resRegFare" style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-top: 2px;">₱15.00</div>
+                <div style="font-size: 0.65rem; color: var(--text-muted);">Per Passenger</div>
+              </div>
+              <div class="light-card" style="text-align: center;">
+                <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Special (Direct)</div>
+                <div id="resSpecFare" style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-top: 2px;">₱45.00</div>
+                <div style="font-size: 0.65rem; color: var(--text-muted);">Entire Tricycle</div>
+              </div>
+            </div>
+
+            <button class="tan-btn" style="margin-top: 12px; background: #FFFFFF; font-size: 0.85rem; padding: 10px;" onclick="viewRouteOnMap()">
+              🗺️ Focus Route on Map
+            </button>
+          </div>
+        </section>
+
+        <!-- SCREEN 3: FARE RATE GUIDE & PER-KM ASSUMPTIONS -->
+        <section id="screenFare" class="screen-view">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 800;">Official Fare Matrix & Assumptions</h3>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
+              Per-kilometer rate breakdown and TODA regulatory pricing model.
+            </p>
+          </div>
+
+          <!-- Interactive Quick Distance Fare Simulator -->
+          <div class="tan-card">
+            <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-main); margin-bottom: 6px;">
+              🧮 Interactive Per-KM Fare Estimator
+            </div>
+            <div style="font-size: 0.76rem; color: var(--text-muted); margin-bottom: 8px;">
+              Select a simulated commute distance to test fare calculations:
+            </div>
+            
+            <div class="chip-container" style="margin-bottom: 10px;">
+              <button class="chip-btn fare-sim-btn active" onclick="simulateFareDistance(1.5, this)">1.5 km (Base)</button>
+              <button class="chip-btn fare-sim-btn" onclick="simulateFareDistance(2.5, this)">2.5 km (Mid)</button>
+              <button class="chip-btn fare-sim-btn" onclick="simulateFareDistance(4.0, this)">4.0 km (Ext)</button>
+              <button class="chip-btn fare-sim-btn" onclick="simulateFareDistance(6.5, this)">6.5 km (Outer)</button>
+            </div>
+
+            <!-- Simulated Output Card -->
+            <div class="light-card" style="padding: 10px 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span id="simZoneDesc" style="font-size: 0.74rem; font-weight: 800; color: #2B2D42;">1.5 km • Base Zone (First 1-2 km)</span>
+                <span style="font-size: 0.68rem; background: #FFFFFF; border: 1px solid #2B2D42; padding: 2px 6px; border-radius: 6px; font-weight: 700;">Simulated</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; text-align: center;">
+                <div style="background: #FFFFFF; border: 1px solid var(--border-dark); border-radius: 8px; padding: 6px 4px;">
+                  <div style="font-size: 0.62rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Regular</div>
+                  <div id="simRegFare" style="font-size: 1.05rem; font-weight: 800; color: var(--text-main); margin-top: 2px;">₱10.00</div>
+                  <div style="font-size: 0.6rem; color: var(--text-muted);">Shared seat</div>
+                </div>
+                <div style="background: #FFFFFF; border: 1px solid var(--border-dark); border-radius: 8px; padding: 6px 4px;">
+                  <div style="font-size: 0.62rem; font-weight: 700; color: #10B981; text-transform: uppercase;">Student 20%</div>
+                  <div id="simStudentFare" style="font-size: 1.05rem; font-weight: 800; color: #10B981; margin-top: 2px;">₱8.00</div>
+                  <div style="font-size: 0.6rem; color: var(--text-muted);">Valid ID</div>
+                </div>
+                <div style="background: #FFFFFF; border: 1px solid var(--border-dark); border-radius: 8px; padding: 6px 4px;">
+                  <div style="font-size: 0.62rem; font-weight: 700; color: #2B2D42; text-transform: uppercase;">Special</div>
+                  <div id="simSpecFare" style="font-size: 1.05rem; font-weight: 800; color: #2B2D42; margin-top: 2px;">₱30.00</div>
+                  <div style="font-size: 0.6rem; color: var(--text-muted);">Direct solo</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Regulatory Per-KM Assumptions -->
+          <div style="font-weight: 800; font-size: 0.9rem; margin-top: 2px;">
+            Official TODA Fare Assumptions & Formulas
+          </div>
+
+          <!-- List of Fare Assumptions -->
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="light-card">
+              <div style="font-weight: 800; font-size: 0.84rem; color: #1A1A1A;">
+                📌 1. Flat Base Fare (First 1 – 2 Kilometers)
+              </div>
+              <p style="font-size: 0.74rem; color: var(--text-muted); margin-top: 3px; line-height: 1.35;">
+                • <b>₱10.00 base fare</b> applies to all trips up to 2.0 km within the same barangay or corridor (e.g. WIT to Luna St, CPU to Lopez Jaena).
+              </p>
+            </div>
+
+            <div class="light-card">
+              <div style="font-weight: 800; font-size: 0.84rem; color: #1A1A1A;">
+                📌 2. Distance Increment Surcharge (Per-KM Brackets)
+              </div>
+              <p style="font-size: 0.74rem; color: var(--text-muted); margin-top: 3px; line-height: 1.35;">
+                • <b>2.1 to 3.0 km</b>: +₱5.00 surcharge ➔ <b>₱15.00</b> (e.g. WIT to CPU or SM City)<br>
+                • <b>3.1 to 5.0 km</b>: +₱10.00 surcharge ➔ <b>₱25.00</b> (e.g. CPU to Tagbak Terminal)<br>
+                • <b>5.1 to 8.0 km</b>: +₱5.00 surcharge ➔ <b>₱30.00</b> (e.g. Jaro Plaza to Pavia Town Plaza)
+              </p>
+            </div>
+
+            <div class="light-card">
+              <div style="font-weight: 800; font-size: 0.84rem; color: #1A1A1A;">
+                📌 3. Special (Direct / Solo Hire) Multiplier Rule
+              </div>
+              <p style="font-size: 0.74rem; color: var(--text-muted); margin-top: 3px; line-height: 1.35;">
+                • Special trips occupy the <b>entire tricycle exclusively</b> (3 passenger seats reserved) without waiting for others. Computed at a <b>3x multiplier</b>: ₱30.00 base, ₱45.00 mid, ₱65.00 extended, and ₱80.00 outer.
+              </p>
+            </div>
+
+            <div class="light-card">
+              <div style="font-weight: 800; font-size: 0.84rem; color: #1A1A1A;">
+                📌 4. Statutory 20% Discount Provision
+              </div>
+              <p style="font-size: 0.74rem; color: var(--text-muted); margin-top: 3px; line-height: 1.35;">
+                • Pursuant to national transport guidelines, <b>Students, Senior Citizens, and PWDs</b> enjoy a 20% discount on regular trips upon presenting a valid ID (₱10 becomes <b>₱8</b>, ₱15 becomes <b>₱12</b>, ₱25 becomes <b>₱20</b>, ₱30 becomes <b>₱24</b>).
+              </p>
+            </div>
+          </div>
+
+          <!-- Fare Brackets from Supabase (Official Database Table) -->
+          <div style="font-weight: 800; font-size: 0.9rem; margin-top: 4px;">
+            Standard Rate Matrix Brackets (Supabase Database)
+          </div>
+
+          <div id="fareBracketsContainer" style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- Dynamically populated from tbl_fare_matrix -->
+          </div>
+
+          <p style="font-size: 0.72rem; color: var(--text-muted); text-align: center; margin-top: 6px;">
+            ⓘ Rates strictly conform to municipal TODA fare regulation ordinances and ICFRB fare matrix.
+          </p>
+        </section>
+
+        <!-- SCREEN 4: TODA DIRECTORY & DISPATCH -->
+        <section id="screenDriver" class="screen-view">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 800;">TODA Associations & Dispatch</h3>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
+              Accredited neighborhood tricycle associations, terminal dispatch, and active zones.
+            </p>
+          </div>
+
+          <!-- Live Terminal Dispatch Service Status (Fulfills Availability Toggle Requirement) -->
+          <div class="tan-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <span style="font-size: 0.68rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted);">Terminal Dispatch Hotline</span>
+                <div style="font-weight: 800; font-size: 0.95rem; color: #1A1A1A; margin-top: 2px;">Jaro - CPU TODA Central Hub</div>
+                <div style="font-size: 0.74rem; color: var(--text-muted);">Station Dispatcher: Unit DR-102 (Sergio D.)</div>
+              </div>
+              <span id="driverStatusTag" class="status-badge">In Service</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(43,45,66,0.15);">
+              <div>
+                <div style="font-size: 0.72rem; font-weight: 700; color: #2B2D42;">Service Availability</div>
+                <div id="driverStatusDesc" style="font-size: 0.74rem; color: var(--text-muted);">Waiting for passengers</div>
+              </div>
+              <button class="tan-btn" id="toggleOnlineBtn" style="width: auto; padding: 6px 14px; font-size: 0.8rem; border-radius: 12px;" onclick="toggleDriverOnline()">
+                Set Offline
+              </button>
+            </div>
+          </div>
+
+          <!-- Section: Verified TODA Associations -->
+          <div style="font-weight: 800; font-size: 0.9rem; margin-top: 2px;">
+            Verified TODA Associations (5 Franchises)
+          </div>
+
+          <!-- TODA Cards Directory -->
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            
+            <!-- CPU-Jaro TODA -->
+            <div class="light-card">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <div style="font-weight: 800; font-size: 0.92rem; color: #1A1A1A;">🛺 CPU - Jaro TODA</div>
+                  <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">Base: CPU Gate 1 (Lopez Jaena St.)</div>
+                </div>
+                <span style="font-size: 0.7rem; font-weight: 700; background: #FFFFFF; border: 1px solid #2B2D42; padding: 2px 6px; border-radius: 6px;">58 Units</span>
+              </div>
+              <div style="font-size: 0.73rem; color: #2B2D42; margin-top: 6px; font-weight: 600;">
+                Route Coverage: CPU Campus • Halfway • Jaro Plaza Corridor
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(43,45,66,0.1);">
+                <span style="font-size: 0.7rem; color: var(--text-muted);">⏰ 5:30 AM - 10:00 PM</span>
+                <button class="chip-btn" style="padding: 3px 8px; font-size: 0.7rem;" onclick="locateTodaOnMap('CPU')">📍 Locate Hub</button>
+              </div>
+            </div>
+
+            <!-- La Paz - WIT TODA -->
+            <div class="light-card">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <div style="font-weight: 800; font-size: 0.92rem; color: #1A1A1A;">🛺 La Paz - WIT TODA</div>
+                  <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">Base: Commission Civil / Luna St.</div>
+                </div>
+                <span style="font-size: 0.7rem; font-weight: 700; background: #FFFFFF; border: 1px solid #2B2D42; padding: 2px 6px; border-radius: 6px;">42 Units</span>
+              </div>
+              <div style="font-size: 0.73rem; color: #2B2D42; margin-top: 6px; font-weight: 600;">
+                Route Coverage: WIT Campus • Luna St. • Forbes Bridge • Plaza La Paz
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(43,45,66,0.1);">
+                <span style="font-size: 0.7rem; color: var(--text-muted);">⏰ 5:00 AM - 9:30 PM</span>
+                <button class="chip-btn" style="padding: 3px 8px; font-size: 0.7rem;" onclick="locateTodaOnMap('WIT')">📍 Locate Hub</button>
+              </div>
+            </div>
+
+            <!-- Jaro Commercial TODA -->
+            <div class="light-card">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <div style="font-weight: 800; font-size: 0.92rem; color: #1A1A1A;">🛺 Jaro Commercial Center TODA</div>
+                  <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">Base: Opposite Jaro Cathedral & Belfry</div>
+                </div>
+                <span style="font-size: 0.7rem; font-weight: 700; background: #FFFFFF; border: 1px solid #2B2D42; padding: 2px 6px; border-radius: 6px;">75 Units</span>
+              </div>
+              <div style="font-size: 0.73rem; color: #2B2D42; margin-top: 6px; font-weight: 600;">
+                Route Coverage: Jaro Plaza • Jaro Public Market • E. Lopez St.
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(43,45,66,0.1);">
+                <span style="font-size: 0.7rem; color: var(--text-muted);">⏰ 24 Hours Service</span>
+                <button class="chip-btn" style="padding: 3px 8px; font-size: 0.7rem;" onclick="locateTodaOnMap('Jaro Plaza')">📍 Locate Hub</button>
+              </div>
+            </div>
+
+            <!-- Mandurriao - SM North TODA -->
+            <div class="light-card">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <div style="font-weight: 800; font-size: 0.92rem; color: #1A1A1A;">🛺 Mandurriao - SM North TODA</div>
+                  <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">Base: Benigno Aquino Ave. Commuter Bay</div>
+                </div>
+                <span style="font-size: 0.7rem; font-weight: 700; background: #FFFFFF; border: 1px solid #2B2D42; padding: 2px 6px; border-radius: 6px;">50 Units</span>
+              </div>
+              <div style="font-size: 0.73rem; color: #2B2D42; margin-top: 6px; font-weight: 600;">
+                Route Coverage: SM City • Diversion Road • Mandurriao Plaza
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(43,45,66,0.1);">
+                <span style="font-size: 0.7rem; color: var(--text-muted);">⏰ 6:00 AM - 10:00 PM</span>
+                <button class="chip-btn" style="padding: 3px 8px; font-size: 0.7rem;" onclick="locateTodaOnMap('SM City')">📍 Locate Hub</button>
+              </div>
+            </div>
+
+            <!-- Pavia Poblacion TODA -->
+            <div class="light-card">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <div style="font-weight: 800; font-size: 0.92rem; color: #1A1A1A;">🛺 Pavia Poblacion TODA</div>
+                  <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">Base: Pavia Town Plaza & Public Market</div>
+                </div>
+                <span style="font-size: 0.7rem; font-weight: 700; background: #FFFFFF; border: 1px solid #2B2D42; padding: 2px 6px; border-radius: 6px;">65 Units</span>
+              </div>
+              <div style="font-size: 0.73rem; color: #2B2D42; margin-top: 6px; font-weight: 600;">
+                Route Coverage: Pavia Municipal Hall • Market • Ungka Boundary
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(43,45,66,0.1);">
+                <span style="font-size: 0.7rem; color: var(--text-muted);">⏰ 5:00 AM - 9:00 PM</span>
+                <button class="chip-btn" style="padding: 3px 8px; font-size: 0.7rem;" onclick="locateTodaOnMap('Pavia')">📍 Locate Hub</button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Dispatch Logs Modal Trigger -->
+          <button class="tan-btn" style="margin-top: 4px;" onclick="viewRideHistoryModal()">
+            📋 View Recent TODA Dispatch Logs
+          </button>
+        </section>
+
+      </main>
+
+      <!-- Mobile Bottom Navigation (Shown on Mobile Screen Only) -->
+      <nav class="mobile-bottom-nav">
+        <button class="nav-btn active" onclick="switchTab('screenHome', this)">🗺️ Home</button>
+        <button class="nav-btn" onclick="switchTab('screenRoute', this)">📍 Routes</button>
+        <button class="nav-btn" onclick="switchTab('screenFare', this)">🏷️ Fares</button>
+        <button class="nav-btn" onclick="switchTab('screenDriver', this)">🛺 TODAs</button>
+      </nav>
+    </aside>
+
+    <!-- =======================================================
+         MAP CONTAINER (Desktop: Right Pane, Mobile: Top Canvas)
+         ======================================================= -->
+    <section class="map-container">
+      <div id="map"></div>
+      <div style="
+        position: absolute; top: 12px; right: 12px; z-index: 1000;
+        background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(4px);
+        border: 1.5px solid var(--border-dark); border-radius: 20px;
+        padding: 5px 12px; font-size: 0.72rem; font-weight: 700;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12); display: flex; align-items: center; gap: 6px;
+      ">
+        <span style="color: #10B981; font-size: 0.8rem;">●</span> 8 Verified Iloilo Hubs
       </div>
-    </div>
+    </section>
 
-    <!-- Bottom Navigation Bar -->
-    <nav class="bottom-nav">
-      <button class="nav-btn active" onclick="switchTab('screenHome', this)">🗺️ Home</button>
-      <button class="nav-btn" onclick="switchTab('screenRoute', this)">📍 Routes</button>
-      <button class="nav-btn" onclick="switchTab('screenFare', this)">🏷️ Fares</button>
-      <button class="nav-btn" onclick="switchTab('screenDriver', this)">👤 Driver</button>
-    </nav>
   </div>
 
   <!-- Leaflet Map Script -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <!-- Load Main Logic -->
+  <!-- Load Main Application Logic -->
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
-```
-
----
-
-### Step 2: Wire Up `src/main.js` with Supabase
-
-Open `src/main.js` and replace its contents with the code below. It connects directly to your newly configured `src/supabase.js`, fetches your seeded terminals and fare rates, and initializes the Leaflet map:
-
-```javascript
-import { supabase } from './supabase.js';
-
-// Global Tab Switcher
-window.switchTab = function (screenId, btnElement) {
-  document.querySelectorAll('.screen-view').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-
-  document.getElementById(screenId).classList.add('active');
-  btnElement.classList.add('active');
-
-  // If opening home screen, recalculate map dimensions
-  if (screenId === 'screenHome' && window.mapInstance) {
-    setTimeout(() => window.mapInstance.invalidateSize(), 200);
-  }
-};
-
-// 1. Initialize Map
-let map;
-function initMap() {
-  map = L.map('map').setView([10.7202, 122.5621], 13);
-  window.mapInstance = map;
-
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18,
-    attribution: '© OpenStreetMap'
-  }).addTo(map);
-}
-
-// 2. Fetch & Render Terminals from Supabase
-async function loadTerminals() {
-  const listEl = document.getElementById('terminalList');
-  
-  try {
-    const { data: terminals, error } = await supabase.from('tbl_terminals').select('*');
-    if (error) throw error;
-
-    listEl.innerHTML = '';
-    terminals.forEach(term => {
-      // Add Pin to Leaflet Map
-      L.marker([term.latitude, term.longitude])
-        .addTo(map)
-        .bindPopup(`<b>${term.terminal_name}</b><br>${term.landmark}<br><i>${term.toda_association}</i>`);
-
-      // Add to List Card
-      const item = document.createElement('div');
-      item.className = 'tan-card';
-      item.innerHTML = `
-        <div style="font-weight: 700; font-size: 0.9rem;">📍 ${term.terminal_name}</div>
-        <div style="font-size: 0.75rem; color: #5C5C5C;">${term.landmark}</div>
-        <div style="font-size: 0.7rem; font-weight: 600; margin-top: 4px; color: #2B2D42;">${term.toda_association}</div>
-      `;
-      listEl.appendChild(item);
-    });
-  } catch (err) {
-    console.error('Error fetching terminals:', err);
-    listEl.innerHTML = `<div style="font-size: 0.8rem; color: red;">Failed to load from database. Check console.</div>`;
-  }
-}
-
-// 3. Fetch & Render Fare Matrix from Supabase
-async function loadFares() {
-  const fareContainer = document.getElementById('fareBracketsContainer');
-
-  try {
-    const { data: fares, error } = await supabase.from('tbl_fare_matrix').select('*').order('min_km', { ascending: true });
-    if (error) throw error;
-
-    fareContainer.innerHTML = '';
-    fares.forEach(f => {
-      const box = document.createElement('div');
-      box.className = 'fare-bracket';
-      box.innerHTML = `
-        <span>${f.distance_range}</span>
-        <span>₱${parseFloat(f.regular_fare).toFixed(0)}</span>
-      `;
-      fareContainer.appendChild(box);
-    });
-  } catch (err) {
-    console.error('Error fetching fares:', err);
-    fareContainer.innerHTML = `<div style="font-size: 0.8rem; color: red;">Failed to load fare matrix.</div>`;
-  }
-}
-
-// 4. Calculate Route Simulation
-window.calculateSelectedRoute = function () {
-  const origin = document.getElementById('originSelect').value;
-  const dest = document.getElementById('destSelect').value;
-  const resultCard = document.getElementById('routeCalculationResult');
-
-  document.getElementById('resRouteTitle').innerText = `${origin} → ${dest}`;
-  
-  if (origin === dest) {
-    document.getElementById('resRegFare').innerText = '₱10.00';
-    document.getElementById('resSpecFare').innerText = '₱30.00';
-    document.getElementById('resTravelTime').innerText = '⏱ Within same barangay zone (< 1 km)';
-  } else {
-    document.getElementById('resRegFare').innerText = '₱15.00';
-    document.getElementById('resSpecFare').innerText = '₱45.00';
-    document.getElementById('resTravelTime').innerText = '⏱ 10-15 mins estimated travel time';
-  }
-
-  resultCard.style.display = 'block';
-};
-
-// 5. Driver Availability Toggle
-let isOnline = true;
-window.toggleDriverOnline = function () {
-  isOnline = !isOnline;
-  const tag = document.getElementById('driverStatusTag');
-  const btn = document.getElementById('toggleOnlineBtn');
-
-  if (isOnline) {
-    tag.innerText = 'Online';
-    tag.style.background = '#10B981';
-    btn.innerText = 'Go Offline';
-  } else {
-    tag.innerText = 'Offline';
-    tag.style.background = '#6B7280';
-    btn.innerText = 'Go Online';
-  }
-};
-
-// Start application
-window.addEventListener('DOMContentLoaded', () => {
-  initMap();
-  loadTerminals();
-  loadFares();
-});
-```
-
----
-
-### Step 3: Test It
-
-In your terminal, make sure the development server is running:
-```bash
-npm run dev
